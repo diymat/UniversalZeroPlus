@@ -201,11 +201,14 @@ class UZP:
         self.safemode = 0
         self.ADCResolution = 12
         self.DACResolution = 12
+        self.w = False;
 
     def WaitForACK(self):
         if self.safemode != 0:
+            self.w = True;
             while self.Read16() != self.ACK:
                 continue
+            self.w = False
 
     def CD32(self, val):
         return int(val) | 0x80000000
@@ -280,6 +283,7 @@ class UZP:
 
     def SafeSend163232(self, val16_1, val32_2, val32_3):
         s = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        #print("{0:x} {1:x} {2:x}".format( val16_1, val32_2, val32_3));        
         self.Send16(val16_1)
         self.Send32(val32_2)
         self.Send32(val32_3)
@@ -526,7 +530,7 @@ class UZP:
         if period == -1:
             period = 1e9 / frequency
         c16 = self.PWM_FREQ_DUTY_L
-        self.SafeSend16323216(c16, CodedPorts[0], int(period) | 0x8000000000000, dutyint | 0x8000)
+        self.SafeSend16323216(c16, CodedPorts[0], int(period) | 0x80000000, dutyint | 0x8000)
         self.WaitForACK()
 
     def PWMFrequency(self, Ports, frequency, period=-1):
@@ -538,7 +542,7 @@ class UZP:
         if period == -1:
             period = 1e9 / frequency
         c16 = self.PWM_FREQ_L
-        self.SafeSend163232(c16, CodedPorts[0], int(period) | 0x8000000000000)
+        self.SafeSend163232(c16, CodedPorts[0], int(period) | 0x80000000)
         self.WaitForACK()
         
     def PWMDuty(self, Ports, duty=-1):
