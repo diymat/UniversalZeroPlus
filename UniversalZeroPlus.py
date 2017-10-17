@@ -57,6 +57,9 @@ class UZP:
     SERVO_SET = 103
     SERVO_SET_G = 104
 
+    IMPULSE_READ	= 110
+
+
     SAFE_MODE = 200
 
 
@@ -87,9 +90,24 @@ class UZP:
 #ADC      |    |    |  1 |  2 |  3 |  4 |  5 |  6 |  7 |  8  | 9  | 10 | 11 |    |    | 12 | 13 | 14 | 15 |    |    |    |    |    |    |    |    |    |
 #DAC      |    |    |    |    |    |    |  1 |  2 |    |     |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
 #SERVO    |    |    |  1 |  2 |  3 |  4 |  5 |  6 |  7 |     | 8  | 9  |    | 10 |    |    |    |    | 11 | 12 | 13 |    | 14 | 15 | 16 | 17 | 18 | 19 |
+#COMP     |    |    | 7P | 1P | 2M | 2P | 7M | 1M |    |     | 4P |    | 4M | 5M | 6P | 3M | 5P | 3P | 6M |    |    |    |    |    |    |    |    |    |
 ########################################################################################################################################################
 ########################################################################################################################################################
 
+    COMP1M = 8
+    COMP1P = 4
+    COMP2M = 5
+    COMP2P = 6
+    COMP3M = 16
+    COMP3P = 18
+    COMP4M = 13
+    COMP4P = 11
+    COMP5M = 14
+    COMP5P = 17
+    COMP6M = 19
+    COMP6P = 15
+    COMP7M = 7
+    COMP7P = 3
 
     DAC1 = 7
     DAC2 = 8
@@ -225,7 +243,7 @@ class UZP:
 
 
     def Send16(self, value):
-        self.spi.xfer([(value & 0xffff) >> 8, (value & 0xff)])
+        self.spi.xfer([(value & 0xff00) >> 8, (value & 0xff)])
 
 
     def Send32(self, value):
@@ -351,6 +369,14 @@ class UZP:
         return [PortNumbers, NPorts]
 
     def SafeMode(self, mode):
+        """
+        Sets SafeMode 
+
+        Parameters:
+            mode -  0 - methods do not send ACK when completed
+                    1 - methods send ACK when completed
+        """
+        self.counter += 1
         if mode != 0:
             mode = int(1)
         self.safemode = mode
@@ -359,7 +385,30 @@ class UZP:
         self.WaitForACK()
 
     def GPIOInit(self, Ports, mode=GPIO_INPUT, type=GPIO_TYPE_PP, popd=GPIO_PUPD_NO_PP, speed=GPIO_SPEED_HIGH, state=0):
+        """
+        Sets up the GPIO 
 
+        Parameters:
+            Ports - list of the the port numbers
+
+            mode  - GPIO_INPUT / GPIO_OUTPUT
+
+            type  - GPIO_TYPE_PP - push-pul
+                  - GPIO_TYPE_OD - open drain
+
+            popd  - GPIO_PUPD_NO_PP - no push/pull
+                  - GPIO_PUPD_PU - pull-up
+                  - GPIO_PUPD_PD - pull-down
+
+            speed - GPIO_SPEED_HIGH - port high speed 
+                  - GPIO_SPEED_MEDIUM - port medium speed 
+                  - GPIO_SPEED_LOW - port low speed 
+                  keep the speed high if RPi is not battery operated
+
+            state - initial GPIO level
+                    
+        """
+        self.counter += 1
         CodedPorts = self.CodePortNumbers(Ports)
         if(CodedPorts[1] == 0):
             return
@@ -370,24 +419,36 @@ class UZP:
 
     def GPIOSet(self, Ports, value):
 
-        CodedPorts = self.CodePortNumbers(Ports)
-        if(CodedPorts[1] == 0):
-            return
+        self.counter += 1
         if(value != 0):
             c16 = 0x100
         else:
             c16 = 0
-        if(CodedPorts[1] > 1):
-            c16 |= self.GPIO_SET_L
-            self.SafeSend1632(c16, CodedPorts[0])
-        else:
+        if len(ports) == 1:
+            c16 |= int(Ports[0]) << 9
             c16 |= self.GPIO_SET
-            c16 |= (Ports[0] << 9)
             self.SafeSend16(c16)
+        else:
+            CodedPorts = self.CodePortNumbers(Ports)
+            if(CodedPorts[1] == 0):
+                return
+            if(CodedPorts[1] > 1):
+                c16 |= self.GPIO_SET_L
+                self.SafeSend1632(c16, CodedPorts[0])
+            else:
+                c16 |= self.GPIO_SET
+                c16 |= (Ports[0] << 9)
+                self.SafeSend16(c16)
         self.WaitForACK()
+
+    def decode32(self, val):
+        val = int(val)
+        return ((val & 0x7fff0000) >> 1) + (val & 0x7fff);
+
 
     def GPIOToggle(self, Ports):
 
+        self.counter += 1
         CodedPorts = self.CodePortNumbers(Ports)
         if(CodedPorts[1] == 0):
             return 
@@ -402,6 +463,7 @@ class UZP:
 
     def GPIORead(self, Ports):
 
+        self.counter += 1
         result = 0
         CodedPorts = self.CodePortNumbers(Ports)
         if(CodedPorts[1] == 0):
@@ -426,6 +488,7 @@ class UZP:
     
     def DACInit(self, Port, obuff=1, generate=0, initialVoltage=0):
 
+        self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
             return
         
@@ -435,11 +498,10 @@ class UZP:
         self.SafeSend1616(c16, int(initialVoltage) | 0xf000)
         self.WaitForACK()
         
-##        self.Send16(c16)
-##        self.Send16(int(initialVoltage) | 0xf000)
  
     def DACWrite(self, Port, Voltage):
 
+        self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
             return
         
@@ -448,11 +510,10 @@ class UZP:
         
         self.SafeSend1616(c16, int(initialVoltage) | 0xf000)
         self.WaitForACK()
-##        self.Send16(c16)
-##        self.Send16(int(Voltage) | 0xf000)
  
     def DACGenerate(self, Port, nsamples, samples, frequency, period=0):
 
+        self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
             return
         if(period == 0 and frequency == 0.0):
@@ -476,6 +537,7 @@ class UZP:
 
     def DACFrequency(self, Port, frequency=0.0, period=0):
 
+        self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
             return
         if(period == 0 and frequency == 0.0):
@@ -486,13 +548,13 @@ class UZP:
 
         if(period == 0):
             period = int(1e9 / frequency)
-        self.counter += 1
         self.SafeSend161632(c16, c16, period | 0x80000000)
         self.WaitForACK()
 
 
     def DACStart(self, Port):
 
+        self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
             return
         
@@ -505,6 +567,7 @@ class UZP:
 
     def DACStop(self, Port, Voltage=0):
 
+        self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
             return
         
@@ -516,6 +579,7 @@ class UZP:
  
 
     def PWMFrequencyDuty(self, Ports, frequency, period=-1, duty=0):
+        self.counter += 1
         if (frequency == -1 and period == -1):
             return
         if duty < 0:
@@ -534,6 +598,7 @@ class UZP:
         self.WaitForACK()
 
     def PWMFrequency(self, Ports, frequency, period=-1):
+        self.counter += 1
         if (frequency == -1 and period == -1):
             return
         CodedPorts = self.CodePortNumbers(Ports)
@@ -546,6 +611,7 @@ class UZP:
         self.WaitForACK()
         
     def PWMDuty(self, Ports, duty=-1):
+        self.counter += 1
         if duty < 0:
             duty = 0
         if duty > 100:
@@ -560,6 +626,7 @@ class UZP:
         self.WaitForACK()
 
     def PWMInit(self, Ports, frequency=0, period=0, duty=0):
+        self.counter += 1
         c16 = self.PWM_INIT_L
         CodedPorts = self.CodePortNumbers(Ports)
         if(CodedPorts[1] == 0):
@@ -571,6 +638,7 @@ class UZP:
             self.WaitForACK()
 
     def PWMStart(self, Ports):
+        self.counter += 1
         c16 = self.PWM_START_L
         CodedPorts = self.CodePortNumbers(Ports)
         if(CodedPorts[1] == 0):
@@ -579,6 +647,7 @@ class UZP:
         self.WaitForACK()
 
     def SERVOInit(self, ports, frequency=50, minimum=1000000, maximum=2000000, centre=1500000, exponential=0):
+        self.counter += 1
         if minimum == 0 or maximum == 0 or centre == 0 or frequency == 0:
             return
         c16 = self.SERVO_INIT
@@ -611,7 +680,6 @@ class UZP:
             position = 100
 
         position = self.GetExpo(position, 100,  self.servo[ports[0]][4])
-        #print("position =",position)
         position += 100
 
         CodedPorts = self.CodePortNumbers(ports)
@@ -625,6 +693,7 @@ class UZP:
         self.WaitForACK()
 
     def ADCInit(self, Ports,speed = 0xff):
+        self.counter += 1
         if speed < 0 or speed > 7:
             sample = 0xff
         else:
@@ -637,6 +706,7 @@ class UZP:
         self.WaitForACK()
 
     def ADCReadVref(self):
+        self.counter += 1
         c16 = self.ADC_READ_VREF
         self.SafeSend16(c16)
         self.Vref = (self.Read16() & 0x0fff) / 1000.0
@@ -644,8 +714,8 @@ class UZP:
         return self.Vref
 
     def ADCRead(self, ports, speed = 0xff):
-        divider = (1 << self.ADCResolution) - 1.0
         self.counter += 1
+        divider = (1 << self.ADCResolution) - 1.0
         data = [[],[]]
         for port in range(0,30) :
             data[0].append(0)
@@ -675,8 +745,8 @@ class UZP:
         return data
 
     def ADCReadData(self, ports, speed = 0xff, nsamples = 0, frequency = 0, period = 0):
-        divider = (1 << self.ADCResolution) - 1.0
         self.counter += 1
+        divider = (1 << self.ADCResolution) - 1.0
         data = []
         for port in range(0,30) :
             data.append([[],[]])
@@ -705,3 +775,57 @@ class UZP:
         signal.signal(signal.SIGINT, s) 
         self.WaitForACK()
         return data
+
+
+    def IMPULSERead(self, Port, mode = 0, edge = 1):
+        """
+        Gets impulse width, frequency of the signal, or frequency and duty ratio of the signal
+
+        Parameters:
+            Port -  GPIO port number
+            mode -  0 - impullse width
+                    1 - frequency and duty ratio of the PWM signal
+                    2 - frequency
+            edge -  initial edge of the signal (1 rising, 0 falling)
+        
+        Return values:
+            [result1, result2]
+                result1 -   in mode 0 - width of the impulse in the 1/64000000 s units
+                        -   in mode 1 - impulse width of the first part of the PWM signal in the 1/64000000 s units
+                        -   in mode 2 - period of the signal in the 1/64000000 s units
+                result2 -   in mode 1 - impulse width of the second part of the PWM signal in the 1/64000000 s units
+        """
+        self.counter += 1
+        result = []
+        if edge != 0:
+            edge = 1
+        if mode < 0 or mode > 2:
+            mode = 0
+        c16 = int(Port) << 11
+        c16 |= int(mode) << 9
+        c16 |= int(edge) << 8
+        c16 |= self.IMPULSE_READ
+        self.SafeSend16(c16)
+        counter = self.Read32()
+        counter = self.decode32(counter)
+        counter -= 1
+        for i in range(0, 3):
+            tmpres = [self.Read32(), self.Read32()]
+            tmpres[0] = self.decode32(tmpres[0])
+            tmpres[1] = self.decode32(tmpres[1])
+            result.append(tmpres)
+        self.WaitForACK()
+        result1 = counter * result[1][1] + (counter - result[1][0]) - (counter * result[0][1] + (counter - result[0][0]))
+        result2 = counter * result[2][1] + (counter - result[2][0]) - (counter * result[1][1] + (counter - result[1][0]))
+        AllZeroes = True
+        for res in result:
+            for value in res:
+                if value != 0:
+                    AllZeroes = False;
+        if AllZeroes: 
+            return[-1,-1]
+        if result1 < 0 or (result2 < 0 and mode == 1):
+            return[0, -1]
+        if result[0][1] == 0x3ffffffff and result [0][0] == 0x3ffffffff:
+            return[-1, 0]
+        return [result1, result2]
