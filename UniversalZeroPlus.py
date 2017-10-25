@@ -418,7 +418,14 @@ class UZP:
         self.WaitForACK()
 
     def GPIOSet(self, Ports, value):
+        """
+        Sets the GPIO 
 
+        Parameters:
+            Ports - list of the the port numbers
+
+            value = 0 or not zero. Sets the GPIO output level to low or high                    
+        """
         self.counter += 1
         if(value != 0):
             c16 = 0x100
@@ -447,6 +454,12 @@ class UZP:
 
 
     def GPIOToggle(self, Ports):
+        """
+        Toggles the GPIO ports
+
+        Parameters:
+            Ports - list of the the port numbers
+        """
 
         self.counter += 1
         CodedPorts = self.CodePortNumbers(Ports)
@@ -462,6 +475,14 @@ class UZP:
         self.WaitForACK()
 
     def GPIORead(self, Ports):
+        """
+        Reads the input GPIO ports
+
+        Parameters:
+            Ports - list of the the port numbers
+
+            returns the list of the read values on the coresponding positions in the list (GPIO19 is on the 19 position on the list)                   
+        """
 
         self.counter += 1
         result = 0
@@ -487,6 +508,16 @@ class UZP:
 
     
     def DACInit(self, Port, obuff=1, generate=0, initialVoltage=0):
+        """
+        Initialises the DAC Port
+
+        Parameters:
+            Port - DAC port number
+
+            obuff - output buffer on/off
+            generate - init in the generator mode
+            initalVoltage - initial voltage in the raw format(0-4095) 
+        """
 
         self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
@@ -500,6 +531,13 @@ class UZP:
         
  
     def DACWrite(self, Port, Voltage):
+        """
+        Sets the DAC Port voltage 
+
+        Parameters:
+            Port - DAC port number
+            Voltage - initial voltage in the raw format(0-4095) 
+        """
 
         self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
@@ -512,6 +550,16 @@ class UZP:
         self.WaitForACK()
  
     def DACGenerate(self, Port, nsamples, samples, frequency, period=0):
+        """
+        Initialises the DAC Waveform generator. Does not start the generation
+
+        Parameters:
+            Port - DAC port number
+            nsamples - number of samples (1 - 4096)
+            samples - list with the samples (number of the samples must be equal to nsamples value)
+            frequency - frequency of the generated signal in Hz
+            period - period of the generated signal in ns
+        """
 
         self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
@@ -536,6 +584,14 @@ class UZP:
         self.WaitForACK()
 
     def DACFrequency(self, Port, frequency=0.0, period=0):
+        """
+        Sets the DAC port generator signal frequency. If the generation was started it will change the frequency on the fly
+
+        Parameters:
+            Port - DAC port number
+            frequency - frequency of the generated signal in Hz
+            period - period of the generated signal in ns
+        """
 
         self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
@@ -553,6 +609,12 @@ class UZP:
 
 
     def DACStart(self, Port):
+        """
+        Starts the DAC port generator. The port must be initialised by the DACInit & DACGenerate methods
+
+        Parameters:
+            Port - DAC port number
+        """
 
         self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
@@ -566,6 +628,13 @@ class UZP:
  
 
     def DACStop(self, Port, Voltage=0):
+        """
+        Stops the DAC port generator
+
+        Parameters:
+            Port - DAC port number
+            Voltage - output voltage
+        """
 
         self.counter += 1
         if(Port != self.DAC1 and Port != self.DAC2):
@@ -579,6 +648,15 @@ class UZP:
  
 
     def PWMFrequencyDuty(self, Ports, frequency, period=-1, duty=0):
+        """
+        Sets the PWM port frequency and duty ratio. If the PWM channel is started it changes the frequency and the duty on the fly
+
+        Parameters:
+            Ports - list of the PWM ports to set the frequency / duty ratio
+            frequency - frequency in Hz
+            period - period in ns
+            ratio - duty ratio in % (0 - 100%)
+        """
         self.counter += 1
         if (frequency == -1 and period == -1):
             return
@@ -598,6 +676,14 @@ class UZP:
         self.WaitForACK()
 
     def PWMFrequency(self, Ports, frequency, period=-1):
+        """
+        Sets the PWM ports frequency 
+
+        Parameters:
+            Ports - list of the PWM ports to set the frequency / duty ratio
+            frequency - frequency in Hz
+            period - period in ns
+        """
         self.counter += 1
         if (frequency == -1 and period == -1):
             return
@@ -611,6 +697,13 @@ class UZP:
         self.WaitForACK()
         
     def PWMDuty(self, Ports, duty=-1):
+        """
+        Sets the PWM ports duty ratio. If the PWM channel is started it changes the duty on the fly
+
+        Parameters:
+            Ports - list of the PWM ports to set the frequency / duty ratio
+            ratio - duty ratio in % (0 - 100%)
+        """
         self.counter += 1
         if duty < 0:
             duty = 0
@@ -626,6 +719,15 @@ class UZP:
         self.WaitForACK()
 
     def PWMInit(self, Ports, frequency=0, period=0, duty=0):
+        """
+        Initialises the PWM ports
+
+        Parameters:
+            Ports - list of the PWM ports to set the frequency / duty ratio
+            frequency - frequency in Hz
+            period - period in ns
+            ratio - duty ratio in % (0 - 100%)
+        """
         self.counter += 1
         c16 = self.PWM_INIT_L
         CodedPorts = self.CodePortNumbers(Ports)
@@ -638,6 +740,12 @@ class UZP:
             self.WaitForACK()
 
     def PWMStart(self, Ports):
+        """
+        Starts PWM generation on the selected ports
+
+        Parameters:
+            Ports - list of the PWM ports to set the frequency / duty ratio
+        """
         self.counter += 1
         c16 = self.PWM_START_L
         CodedPorts = self.CodePortNumbers(Ports)
@@ -647,6 +755,17 @@ class UZP:
         self.WaitForACK()
 
     def SERVOInit(self, ports, frequency=50, minimum=1000000, maximum=2000000, centre=1500000, exponential=0):
+        """
+        Initialises the servo port (or PWM port to generate th RC PWM servo signal)
+
+        Parameters:
+            Ports - list of the ports
+            frequency - frequency of the generated signal. Standard servos require 20ms time between the impluses. High speed servos may accept the higher rates
+            minimum - minimum impulse width in ns. For standard servos it is 1ms = 1000000ns
+            centre - centre position impulse width in ns. For standard servos it is 1.5ms = 1500000ns
+            maximum - minimum impulse width in ns. For standard servos it is 2ms = 2000000ns
+            expotential - expo ratio. For the explanation please visit: https://www.desmos.com/calculator/x3utvihals
+        """
         self.counter += 1
         if minimum == 0 or maximum == 0 or centre == 0 or frequency == 0:
             return
@@ -673,6 +792,13 @@ class UZP:
         return result
 
     def SERVOSetPos(self, ports, position):   #-100 : 100 - exponent is taken from the first port in the list
+        """
+        Sets the servo position
+
+        Parameters:
+            Ports - list of the ports
+            osition - servo position in %. 0% - centre point, -100% minimum position, 100% maximum position
+        """
         self.counter += 1
         if position < -100:
             position = -100
@@ -693,6 +819,23 @@ class UZP:
         self.WaitForACK()
 
     def ADCInit(self, Ports,speed = 0xff):
+        """
+        Initialises the ADC ports
+
+        Parameters:
+            Ports - list of the ports
+            speed - sample time:
+            S = sample time:
+                    0 23.4ns
+                    1 39.1ns
+                    2 70.3ns
+                    3 117.2ns
+                    4 304.7ns
+                    5 960.9ns
+                    6 2835.9ns
+                    7 9398.4ns
+                    0xff (dflt) 117.2ns
+        """
         self.counter += 1
         if speed < 0 or speed > 7:
             sample = 0xff
@@ -706,6 +849,13 @@ class UZP:
         self.WaitForACK()
 
     def ADCReadVref(self):
+        """
+        Reads the Voltage reference
+
+        Parameters:
+            none
+        Return the reference voltage in mV
+        """
         self.counter += 1
         c16 = self.ADC_READ_VREF
         self.SafeSend16(c16)
@@ -714,6 +864,24 @@ class UZP:
         return self.Vref
 
     def ADCRead(self, ports, speed = 0xff):
+        """
+        Reads the ADC ports
+
+        Parameters:
+            Ports - list of the ports
+            speed - sample time:
+            S = sample time:
+                    0 23.4ns
+                    1 39.1ns
+                    2 70.3ns
+                    3 117.2ns
+                    4 304.7ns
+                    5 960.9ns
+                    6 2835.9ns
+                    7 9398.4ns
+                    0xff (dflt) 117.2ns
+            returns list of lists. List 0 - raw values (0-4095), List 1 - voltage in mV
+        """
         self.counter += 1
         divider = (1 << self.ADCResolution) - 1.0
         data = [[],[]]
@@ -745,6 +913,27 @@ class UZP:
         return data
 
     def ADCReadData(self, ports, speed = 0xff, nsamples = 0, frequency = 0, period = 0):
+        """
+        Reads set of data results from ADC ports
+
+        Parameters:
+            Ports - list of the ports
+            speed - sample time:
+            S = sample time:
+                    0 23.4ns
+                    1 39.1ns
+                    2 70.3ns
+                    3 117.2ns
+                    4 304.7ns
+                    5 960.9ns
+                    6 2835.9ns
+                    7 9398.4ns
+                    0xff (dflt) 117.2ns
+            nsmaples - number of samples to be read in one period (1/frequency). The actual time between reads is period / nsamples
+            frequency - frequency in Hz
+            period - period in ns
+            returns list of lists of the list. List 0 - list of lists of results, list[port][0] - raw values (0-4095), list[port][0] - voltage in mV
+        """
         self.counter += 1
         divider = (1 << self.ADCResolution) - 1.0
         data = []
