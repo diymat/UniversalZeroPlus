@@ -17,9 +17,10 @@ ADCfrequency = 1000
 PWMfrequency = 4000
 
 PWMratio = 25
+PWMdelta = 1
 
-dports = [uzp0.ADC1, uzp0.ADC2, uzp0.ADC3]    # ADC ports to act as the oscilloscope channnels. You can add other
-PWMports = [uzp0.PWM19]
+dports = [uzp0.ADC1, uzp0.ADC2, uzp0.ADC3]    # ADC ports to act as the oscilloscope channnels. You can add the additional ones or just use one
+PWMports = [uzp0.PWM17, uzp0.PWM19]
 
 
 ###########################################################################################
@@ -95,7 +96,11 @@ try:
             functions.append(Drawing.Convert(data, ADCfrequency, dport))
 
         #oscillogram draw
-        Drawing.DrawGrid(functions, xgrid = 10)
+        PWMratio += PWMdelta
+        if PWMratio > 75 or PWMratio < 25:
+            PWMdelta = -PWMdelta
+        uzp0.PWMDuty(PWMports, PWMratio)
+        Drawing.DrawGrid(functions, xgrid = 10) 
         Drawing.DrawFunctions(functions)
         canv.update()
 except:
