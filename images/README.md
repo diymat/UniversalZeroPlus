@@ -1,0 +1,1 @@
+Product pictures 1024x1024px
